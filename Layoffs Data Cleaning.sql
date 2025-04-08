@@ -1,18 +1,13 @@
 -- SQL Project - Data Cleaning
-
 -- https://www.kaggle.com/datasets/swaptr/layoffs-2022
-
-
-
-
 
 
 SELECT * 
 FROM world_layoffs.layoffs;
 
 
-
--- first thing we want to do is create a staging table. This is the one we will work in and clean the data. We want a table with the raw data in case something happens
+-- first thing we want to do is create a staging table. This is the one we will work in and clean the data.
+-- We want a table with the raw data in case something happens
 CREATE TABLE world_layoffs.layoffs_staging 
 LIKE world_layoffs.layoffs;
 
@@ -20,7 +15,7 @@ INSERT layoffs_staging
 SELECT * FROM world_layoffs.layoffs;
 
 
--- now when we are data cleaning we usually follow a few steps
+-- Now when we are data cleaning we usually follow a few steps
 -- 1. check for duplicates and remove any
 -- 2. standardize data and fix errors
 -- 3. Look at null values and see what 
@@ -30,53 +25,42 @@ SELECT * FROM world_layoffs.layoffs;
 
 -- 1. Remove Duplicates
 
-# First let's check for duplicates
-
-
+--First let's check for duplicates
 
 SELECT *
-FROM world_layoffs.layoffs_staging
-;
+FROM world_layoffs.layoffs_staging;
+
+
 
 SELECT company, industry, total_laid_off,`date`,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, industry, total_laid_off,`date`) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging;
+		ROW_NUMBER() OVER (PARTITION BY company, industry, total_laid_off,`date`) AS row_num
+FROM world_layoffs.layoffs_staging;
 
 
 
 SELECT *
-FROM (
-	SELECT company, industry, total_laid_off,`date`,
-		ROW_NUMBER() OVER (
-			PARTITION BY company, industry, total_laid_off,`date`
-			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging
+FROM ( SELECT company, industry, total_laid_off,`date`,
+		ROW_NUMBER() OVER ( PARTITION BY company, industry, total_laid_off,`date`) AS row_num
+	FROM world_layoffs.layoffs_staging
 ) duplicates
-WHERE 
-	row_num > 1;
+WHERE row_num > 1;
     
 -- let's just look at oda to confirm
 SELECT *
 FROM world_layoffs.layoffs_staging
-WHERE company = 'Oda'
-;
+WHERE company = 'Oda';
 -- it looks like these are all legitimate entries and shouldn't be deleted. We need to really look at every single row to be accurate
+
 
 -- these are our real duplicates 
 SELECT *
-FROM (
-	SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
+FROM ( SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
 		ROW_NUMBER() OVER (
 			PARTITION BY company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions
 			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging
+	FROM world_layoffs.layoffs_staging
 ) duplicates
-WHERE 
-	row_num > 1;
+WHERE row_num > 1;
 
 -- these are the ones we want to delete where the row number is > 1 or 2or greater essentially
 
@@ -84,20 +68,17 @@ WHERE
 WITH DELETE_CTE AS 
 (
 SELECT *
-FROM (
-	SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
+FROM (SELECT company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions,
 		ROW_NUMBER() OVER (
 			PARTITION BY company, location, industry, total_laid_off,percentage_laid_off,`date`, stage, country, funds_raised_millions
 			) AS row_num
-	FROM 
-		world_layoffs.layoffs_staging
+	FROM world_layoffs.layoffs_staging
 ) duplicates
 WHERE 
 	row_num > 1
 )
 DELETE
-FROM DELETE_CTE
-;
+FROM DELETE_CTE;
 
 
 WITH DELETE_CTE AS (
@@ -118,8 +99,7 @@ ALTER TABLE world_layoffs.layoffs_staging ADD row_num INT;
 
 
 SELECT *
-FROM world_layoffs.layoffs_staging
-;
+FROM world_layoffs.layoffs_staging;
 
 CREATE TABLE `world_layoffs`.`layoffs_staging2` (
 `company` text,
@@ -164,10 +144,6 @@ SELECT `company`,
 
 DELETE FROM world_layoffs.layoffs_staging2
 WHERE row_num >= 2;
-
-
-
-
 
 
 
@@ -288,12 +264,23 @@ FROM world_layoffs.layoffs_staging2;
 
 -- 3. Look at Null Values
 
--- the null values in total_laid_off, percentage_laid_off, and funds_raised_millions all look normal. I don't think I want to change that
--- I like having them null because it makes it easier for calculations during the EDA phase
+-- the null values in total_laid_off, percentage_laid_off, and funds_raised_millions all look normal. We don't have the total values
+-- to compare to, so we leave theme as is.
 
--- so there isn't anything I want to change with the null values
+--We can change the null industry to other if we have those in our dataset.
+SELECT t1.industry, t2.industry
+FROM world_layoffs.layoffs_staging_v2 t1
+JOIN world_layoffs.layoffs_staging_v2 t2  
+		ON t1.company= t2.company AND t1.location = t2.location
+WHERE (t1.industry IS NULL) AND 
+ t2.industry <> 'NULL';
 
-
+--Use the update statment to update those after identifying:
+UPDATE world_layoffs.layoffs_staging_v2 t1
+JOIN world_layoffs.layoffs_staging_v2 t2  
+		ON t1.company= t2.company AND t1.location = t2.location
+WHERE (t1.industry IS NULL) AND 
+ t2.industry <> 'NULL';
 
 
 -- 4. remove any columns and rows we need to
@@ -322,37 +309,3 @@ DROP COLUMN row_num;
 
 SELECT * 
 FROM world_layoffs.layoffs_staging2;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
