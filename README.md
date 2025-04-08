@@ -5,7 +5,7 @@
 This project focuses on data cleaning and exploratory data analysis (EDA) of global tech layoffs, using a dataset that tracks company-wide layoffs, affected employees, funding stages, and more. The goal is to understand trends, patterns, and possible insights from the layoffs data.
 
 ### 📁 Dataset
-Source: Layoffs.fyi
+Source: https://www.kaggle.com/datasets/swaptr/layoffs-2022
 
 Table Used: layoffs_staging_v2
 
